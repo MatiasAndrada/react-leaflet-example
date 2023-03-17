@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Map, TileLayer } from "react-leaflet";
-import data from "../assets/data.json";
+import { Map, TileLayer, /* GeoJSON */ } from "react-leaflet";
+import data from "../../assets/data.json";
 import Markers from "./VenueMarkers";
-
 import { useLocation, useHistory } from "react-router-dom";
-
 import "leaflet/dist/leaflet.css";
 
 const MapView = (props) => {
@@ -13,9 +11,10 @@ const MapView = (props) => {
     zoom: 13,
     data,
   });
-
+ 
   const location = useLocation();
   const history = useHistory();
+  
 
   useEffect(() => {
     if (location.state.latitude && location.state.longitude) {
@@ -23,23 +22,16 @@ const MapView = (props) => {
         lat: location.state.latitude,
         lng: location.state.longitude,
       };
-      console.log(state);
-      setState({
-        ...state,
-        data: {
-          venues: state.data.venues.concat({
-            name: "new",
-            geometry: [currentLocation.lat, currentLocation.lng],
-          }),
-        },
+      setState((prevState) => ({
+        ...prevState,
         currentLocation,
-      });
+      }));
       history.replace({
         pathname: "/map",
         state: {},
       });
     }
-  }, [location]);
+  }, [location, history]);
 
   return (
     <Map center={state.currentLocation} zoom={state.zoom}>
@@ -48,6 +40,9 @@ const MapView = (props) => {
         attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
       />
       <Markers venues={state.data.venues} />
+
+{/*       <GeoJSON data={franceGeoJSON} style={{ color: 'red', fillColor: 'red' }} /> */}
+
     </Map>
   );
 };

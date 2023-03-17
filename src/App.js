@@ -3,8 +3,9 @@ import "./App.css";
 
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
-import MapView from "./components/MapView";
 import Home from "./components/Home";
+import Search from './components/Search/Search'
+import MapView from "./components/Maps/MapView";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         </Route>
         <Route path="/">
           <Home />
+          <Search />
         </Route>
       </Switch>
     </Router>
