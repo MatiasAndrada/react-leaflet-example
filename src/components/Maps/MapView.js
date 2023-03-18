@@ -16,6 +16,7 @@ const MapView = (props) => {
   const history = useHistory();
   
 
+
   useEffect(() => {
     if (location.state.latitude && location.state.longitude) {
       const currentLocation = {
@@ -40,8 +41,8 @@ const MapView = (props) => {
         attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
       />
       <Markers venues={state.data.venues} />
-
-{/*       <GeoJSON data={franceGeoJSON} style={{ color: 'red', fillColor: 'red' }} /> */}
+{/* 
+      <GeoJSON data={spainGeoJSON} style={{ color: 'red', fillColor: 'red' }} /> */}
 
     </Map>
   );

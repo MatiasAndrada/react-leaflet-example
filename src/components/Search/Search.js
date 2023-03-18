@@ -8,67 +8,75 @@ function Search(props) {
     country: "",
     totalCases: "",
     totalDeaths: "",
+    colorState: "",
+    limitData: {},
   });
+  console.log("🦇 ~ file: Search.js:14 ~ Search ~ countryData:", countryData)
 
-  console.log(countryData);
+/*     console.log(countryData); */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
-      // Verificar si el valor ingresado es un país
-      const urlCovid = `https://api.covid19api.com/total/country/${country}`;
+      // Validar si lo ingresado en el input es un país
+      const urlValidate = `https://restcountries.com/v3.1/name/${country}`;
+      const countryDataResponse = await fetch(urlValidate);
+      if (!countryDataResponse.ok) {
+        throw new Error("Error en API de validación de país");
+      }
+      const countryData = await countryDataResponse.json();
+      const countryCode  = countryData[0].name.common;
+      console.log("🦇 ~ file: Search.js:30 ~ handleSubmit ~ countryCode:", countryCode)
+
+
+      // Obtener los datos de COVID del país
+      const urlCovid = `https://api.covid19api.com/total/country/${countryCode}`;
       const covidDataResponse = await fetch(urlCovid);
 
-      if (!covidDataResponse.ok || covidDataResponse.status === 404) {
+      if (!covidDataResponse.ok) {
         throw new Error("Error en API de datos de COVID");
       }
 
       const covidData = await covidDataResponse.json();
 
       if (covidData.length > 1) {
-        setCountryData({
-          country: covidData[covidData.length - 1].Country,
-          totalCases: covidData[covidData.length - 1].Confirmed,
-          totalDeaths: covidData[covidData.length - 1].Deaths,
-        });
+        const casesTotal = covidData[covidData.length - 1].Confirmed;
+        const deathsTotal = covidData[covidData.length - 1].Deaths;
+        // Calcular el color del país en base a los casos y muertes
+        const color = generateColor(deathsTotal, casesTotal);
+
+
+        setCountryData((prevState) => ({
+          ...prevState,
+          country: countryCode,
+          totalCases: casesTotal,
+          totalDeaths: deathsTotal,
+          colorState: color,
+        }));
       }
 
       // Obtener los límites del país
-      console.log(-0)
-      const countryCode = covidData[covidData.length - 1].Country.toLowerCase();
       const limitDataResponse = await fetch(
-       ` https://restcountries.com/v2/alpha/${countryCode}`
+        `https://nominatim.openstreetmap.org/search.php?q=${countryCode}&format=geojson&polygon_geojson=1`
       );
-      console.log("0", limitDataResponse);
       if (!limitDataResponse.ok) {
         throw new Error("Error en API de límites de país");
       }
-
       const limitData = await limitDataResponse.json();
-      console.log(limitData);
-      // Calcular el riesgo basado en los casos totales y el número de muertes
-      const totalCases = countryData[0].cases;
-      const totalDeaths = countryData[0].deaths;
-      const combinedValue = totalCases * 0.7 + totalDeaths * 0.3; // 70% weight to total cases, 30% weight to total deaths
+      setCountryData((prevState) => ({	
+        ...prevState,
+        limitData: limitData.features[0].geometry.coordinates[0],
+      }));
 
-      // Generar un color basado en el riesgo calculado
-      const color = generateColor(combinedValue);
 
-      // Crear el objeto con los datos del país
-      const countryDataObject = {
-        name: countryData[0].name,
-        lat: limitData.latlng[0],
-        long: limitData.latlng[1],
-        color: color,
-      };
-
-      // Enviar los datos del país al componente padre
-      props.onSearch(countryDataObject);
+/*       props.onSearch(countryDataObject); */
     } catch (error) {
       // Manejar el error de cada API por separado
       console.error(error);
-      if (error.message === "Error en API de datos de COVID") {
+      if (error.message === "Error en API de validación de país") {
+        setError("País no encontrado");
+      } else if (error.message === "Error en API de datos de COVID") {
         setError("No se encontró información de COVID para el país ingresado");
       } else if (error.message === "Error en API de límites de país") {
         setError(
@@ -84,11 +92,25 @@ function Search(props) {
     setCountry(e.target.value);
   };
 
-  const generateColor = (partial, total) => {
-    const percentage = (partial * 100) / total;
-    const hue = (percentage * 120) / 100;
-    console.log(`hsl(${hue}, 100%, 50%)`);
-    return `hsl(${hue}, 100%, 50%)`;
+  const generateColor = (deaths, cases) => {
+    const deathRate = deaths / cases;
+    console.log(
+      "🦇 ~ file: Search.js:88 ~ generateColor ~ deathRate:",
+      deathRate
+    );
+    let color;
+
+    if (deathRate <= 0.01) {
+      color = "green"; // si la tasa es menor o igual a 1%, verde
+    } else if (deathRate <= 0.03) {
+      color = "yellow"; // si la tasa es menor o igual a 3%, amarillo
+    } else if (deathRate <= 0.06) {
+      color = "orange"; // si la tasa es menor o igual a 6%, naranja
+    } else {
+      color = "red"; // si la tasa es mayor a 6%, rojo
+    }
+
+    return color;
   };
 
   return (
