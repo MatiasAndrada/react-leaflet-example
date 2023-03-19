@@ -1,6 +1,8 @@
 import { useState } from "react";
+import Loading from "../Loading/Loading";
 
 function Search(props) {
+  const [loading, setLoading] = useState(false);
   const [country, setCountry] = useState("");
   const [error, setError] = useState("");
 
@@ -11,14 +13,14 @@ function Search(props) {
     colorState: "",
     limitData: {},
   });
-  console.log("🦇 ~ file: Search.js:14 ~ Search ~ countryData:", countryData)
+  console.log("🦇 ~ file: Search.js:14 ~ Search ~ countryData:", countryData);
 
-/*     console.log(countryData); */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     try {
+      setLoading(true);
       // Validar si lo ingresado en el input es un país
       const urlValidate = `https://restcountries.com/v3.1/name/${country}`;
       const countryDataResponse = await fetch(urlValidate);
@@ -26,9 +28,11 @@ function Search(props) {
         throw new Error("Error en API de validación de país");
       }
       const countryData = await countryDataResponse.json();
-      const countryCode  = countryData[0].name.common;
-      console.log("🦇 ~ file: Search.js:30 ~ handleSubmit ~ countryCode:", countryCode)
-
+      const countryCode = countryData[0].name.common;
+      console.log(
+        "🦇 ~ file: Search.js:30 ~ handleSubmit ~ countryCode:",
+        countryCode
+      );
 
       // Obtener los datos de COVID del país
       const urlCovid = `https://api.covid19api.com/total/country/${countryCode}`;
@@ -45,7 +49,6 @@ function Search(props) {
         const deathsTotal = covidData[covidData.length - 1].Deaths;
         // Calcular el color del país en base a los casos y muertes
         const color = generateColor(deathsTotal, casesTotal);
-
 
         setCountryData((prevState) => ({
           ...prevState,
@@ -64,13 +67,13 @@ function Search(props) {
         throw new Error("Error en API de límites de país");
       }
       const limitData = await limitDataResponse.json();
-      setCountryData((prevState) => ({	
+      setCountryData((prevState) => ({
         ...prevState,
         limitData: limitData.features[0].geometry.coordinates[0],
       }));
 
-
-/*       props.onSearch(countryDataObject); */
+      /*       props.onSearch(countryDataObject); */
+      setLoading(false);
     } catch (error) {
       // Manejar el error de cada API por separado
       console.error(error);
@@ -114,23 +117,60 @@ function Search(props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center">
-      <input
-        type="text"
-        className="py-2 px-4 rounded-l-lg border-t mr-0 border-b border-l text-gray-800 border-gray-200 bg-white"
-        placeholder="Search country"
-        onChange={handleCountryChange}
-        value={country}
-      />
-      <button
-        type="submit"
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r-lg"
-      >
-        Search
-      </button>
-      {error && <p className="text-red-500">{error}</p>}
-    </form>
+    <div className="flex flex-col justify-center items-center h-screen">
+      <h1 className="text-4xl font-bold mb-8">Search country</h1>
+      <form onSubmit={handleSubmit} className="flex items-center">
+        <input
+          type="text"
+          className="py-2 px-4 rounded-l-lg border-t mr-0 border-b border-l text-gray-800 border-gray-200 bg-white"
+          placeholder="Search country"
+          onChange={handleCountryChange}
+          value={country}
+        />
+        <button
+          type="submit"
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r-lg ml-2"
+        >
+          Search
+        </button>
+      </form>
+      {error && <p className="text-red-500 mt-4">{error}</p>}
+      {loading && <Loading />}
+      {countryData.country && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">
+            {countryData.country} - {countryData.colorState}
+          </h2>
+          <p className="text-lg">
+            Total cases: {countryData.totalCases} - Total deaths: {countryData.totalDeaths}
+          </p>
+        </div>
+      )}
+      // Aquí se renderiza el mapa
+      {countryData.limitData.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Map</h2>
+          <div className="w-96 h-96">
+            <Map
+              center={[0, 0]}
+              zoom={2}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+              <Polygon
+                positions={countryData.limitData}
+                color={countryData.colorState}
+              />
+            </Map>
+        </div>
+    </div>
   );
-}
+};
+
+
+
 
 export default Search;
