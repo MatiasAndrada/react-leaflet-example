@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Loading from "../Loading/Loading";
+import MapViewLimits from "../Maps/MapViewLimits";
 
-function Search(props) {
+function Search() {
   const [loading, setLoading] = useState(false);
   const [country, setCountry] = useState("");
   const [error, setError] = useState("");
@@ -13,12 +14,36 @@ function Search(props) {
     colorState: "",
     limitData: {},
   });
-  console.log("🦇 ~ file: Search.js:14 ~ Search ~ countryData:", countryData);
+  console.log("🦇 ~ file: Search.js:17 ~ Search ~ countryData:", countryData)
+  useEffect(() => {
+    const generateColor = (deaths, cases) => {
+      const percentage = (deaths / cases) * 100;
+      if (percentage < 1) {
+        return "green";
+      } else if (percentage >= 1 && percentage < 5) {
+        return "yellow";
+      } else if (percentage >= 5 && percentage < 10) {
+        return "orange";
+      } else if (percentage >= 10) {
+        return "red";
+      }
+    };
+
+    if (countryData.totalCases && countryData.totalDeaths) {
+      const color = generateColor(
+        countryData.totalDeaths,
+        countryData.totalCases
+      );
+      setCountryData((prevState) => ({
+        ...prevState,
+        colorState: color,
+      }));
+    }
+  }, [countryData.totalCases, countryData.totalDeaths]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
     try {
       setLoading(true);
       // Validar si lo ingresado en el input es un país
@@ -29,10 +54,6 @@ function Search(props) {
       }
       const countryData = await countryDataResponse.json();
       const countryCode = countryData[0].name.common;
-      console.log(
-        "🦇 ~ file: Search.js:30 ~ handleSubmit ~ countryCode:",
-        countryCode
-      );
 
       // Obtener los datos de COVID del país
       const urlCovid = `https://api.covid19api.com/total/country/${countryCode}`;
@@ -47,15 +68,12 @@ function Search(props) {
       if (covidData.length > 1) {
         const casesTotal = covidData[covidData.length - 1].Confirmed;
         const deathsTotal = covidData[covidData.length - 1].Deaths;
-        // Calcular el color del país en base a los casos y muertes
-        const color = generateColor(deathsTotal, casesTotal);
 
         setCountryData((prevState) => ({
           ...prevState,
           country: countryCode,
           totalCases: casesTotal,
           totalDeaths: deathsTotal,
-          colorState: color,
         }));
       }
 
@@ -69,10 +87,8 @@ function Search(props) {
       const limitData = await limitDataResponse.json();
       setCountryData((prevState) => ({
         ...prevState,
-        limitData: limitData.features[0].geometry.coordinates[0],
+        limitData: limitData,
       }));
-
-      /*       props.onSearch(countryDataObject); */
       setLoading(false);
     } catch (error) {
       // Manejar el error de cada API por separado
@@ -95,27 +111,6 @@ function Search(props) {
     setCountry(e.target.value);
   };
 
-  const generateColor = (deaths, cases) => {
-    const deathRate = deaths / cases;
-    console.log(
-      "🦇 ~ file: Search.js:88 ~ generateColor ~ deathRate:",
-      deathRate
-    );
-    let color;
-
-    if (deathRate <= 0.01) {
-      color = "green"; // si la tasa es menor o igual a 1%, verde
-    } else if (deathRate <= 0.03) {
-      color = "yellow"; // si la tasa es menor o igual a 3%, amarillo
-    } else if (deathRate <= 0.06) {
-      color = "orange"; // si la tasa es menor o igual a 6%, naranja
-    } else {
-      color = "red"; // si la tasa es mayor a 6%, rojo
-    }
-
-    return color;
-  };
-
   return (
     <div className="flex flex-col justify-center items-center h-screen">
       <h1 className="text-4xl font-bold mb-8">Search country</h1>
@@ -136,41 +131,12 @@ function Search(props) {
       </form>
       {error && <p className="text-red-500 mt-4">{error}</p>}
       {loading && <Loading />}
-      {countryData.country && (
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">
-            {countryData.country} - {countryData.colorState}
-          </h2>
-          <p className="text-lg">
-            Total cases: {countryData.totalCases} - Total deaths: {countryData.totalDeaths}
-          </p>
-        </div>
+      {countryData.country && countryData.limitData && countryData.colorState && countryData.totalCases && countryData.totalDeaths && (
+        <MapViewLimits countryName={countryData.country} limitData={countryData.limitData} color={countryData.colorState} totalCases={countryData.totalCases} totalDeaths={countryData.totalDeaths}/>
       )}
-      // Aquí se renderiza el mapa
-      {countryData.limitData.length > 0 && (
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4">Map</h2>
-          <div className="w-96 h-96">
-            <Map
-              center={[0, 0]}
-              zoom={2}
-              style={{ width: "100%", height: "100%" }}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
-              <Polygon
-                positions={countryData.limitData}
-                color={countryData.colorState}
-              />
-            </Map>
-        </div>
+
     </div>
   );
-};
-
-
-
+}
 
 export default Search;
