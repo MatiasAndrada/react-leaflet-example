@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
 import Home from "./components/Home";
 import Search from './components/Search/Search'
-/* import MapView from "./components/Maps/MapView"; */
+import MapView from "./components/Maps/MapView"; 
 import MapViewLimits from "./components/Maps/MapViewLimits";
 
 function App() {
@@ -13,11 +13,12 @@ function App() {
     <Router>
       <Switch>
         <Route path="/map">
-          <MapViewLimits/>
+          <MapView />
         </Route>
         <Route path="/">
           <Home />
           <Search />
+          <MapViewLimits/>
         </Route>
       </Switch>
     </Router>

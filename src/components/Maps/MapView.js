@@ -8,10 +8,10 @@ import "leaflet/dist/leaflet.css";
 const MapView = (props) => {
   const [state, setState] = useState({
     currentLocation: {
-      lat: 40.416775,
-      lng: -3.70379,
+      lat: 0,
+      lng: 0,
     },
-    zoom: 13,
+    zoom: 2,
     data,
   });
 
@@ -57,7 +57,7 @@ const MapView = (props) => {
   }, [location, history]);
 
   return (
-    <Map center={state.currentLocation} zoom={state.zoom}>
+    <Map center={state.currentLocation} zoom={state.zoom} className="w-90 h-screen">
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'

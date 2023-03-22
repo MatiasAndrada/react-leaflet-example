@@ -1,52 +1,34 @@
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
+//import use dispatch 
+//import { useDispatch } from "react-redux";
+
+//import { setCountryName, setCovidData } from "../../store/slice/covidSlice";
+
 import Loading from "../Loading/Loading";
-import MapViewLimits from "../Maps/MapViewLimits";
 
 function Search() {
-  const [loading, setLoading] = useState(false);
   const [country, setCountry] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const [countryData, setCountryData] = useState({
     country: "",
     totalCases: "",
     totalDeaths: "",
-    colorState: "",
-    limitData: {},
+    color: "",
   });
-  console.log("🦇 ~ file: Search.js:17 ~ Search ~ countryData:", countryData)
-  useEffect(() => {
-    const generateColor = (deaths, cases) => {
-      const percentage = (deaths / cases) * 100;
-      if (percentage < 1) {
-        return "green";
-      } else if (percentage >= 1 && percentage < 5) {
-        return "yellow";
-      } else if (percentage >= 5 && percentage < 10) {
-        return "orange";
-      } else if (percentage >= 10) {
-        return "red";
-      }
-    };
+  
+  //const dispatch = useDispatch();
+  //console.log(dispatch)
 
-    if (countryData.totalCases && countryData.totalDeaths) {
-      const color = generateColor(
-        countryData.totalDeaths,
-        countryData.totalCases
-      );
-      setCountryData((prevState) => ({
-        ...prevState,
-        colorState: color,
-      }));
-    }
-  }, [countryData.totalCases, countryData.totalDeaths]);
+
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     try {
       setLoading(true);
-      // Validar si lo ingresado en el input es un país
+      //! Validar si lo ingresado en el input es un país
       const urlValidate = `https://restcountries.com/v3.1/name/${country}`;
       const countryDataResponse = await fetch(urlValidate);
       if (!countryDataResponse.ok) {
@@ -55,7 +37,7 @@ function Search() {
       const countryData = await countryDataResponse.json();
       const countryCode = countryData[0].name.common;
 
-      // Obtener los datos de COVID del país
+      //! Obtener los datos de COVID del país
       const urlCovid = `https://api.covid19api.com/total/country/${countryCode}`;
       const covidDataResponse = await fetch(urlCovid);
 
@@ -65,30 +47,51 @@ function Search() {
 
       const covidData = await covidDataResponse.json();
 
-      if (covidData.length > 1) {
-        const casesTotal = covidData[covidData.length - 1].Confirmed;
-        const deathsTotal = covidData[covidData.length - 1].Deaths;
+      const casesTotal = covidData[covidData.length - 1].Confirmed;
+      const deathsTotal = covidData[covidData.length - 1].Deaths;
+      const generateColor = (deaths, cases) => {
+        const percentage = (deaths / cases) * 100;
+        if (percentage < 1) {
+          return "green";
+        } else if (percentage >= 1 && percentage < 5) {
+          return "yellow";
+        } else if (percentage >= 5 && percentage < 10) {
+          return "orange";
+        } else if (percentage >= 10) {
+          return "red";
+        }
+      };
+      const color = generateColor(deathsTotal, casesTotal);
 
-        setCountryData((prevState) => ({
-          ...prevState,
-          country: countryCode,
-          totalCases: casesTotal,
-          totalDeaths: deathsTotal,
-        }));
-      }
-
-      // Obtener los límites del país
+      //! Obtener los límites del país
       const limitDataResponse = await fetch(
-        `https://nominatim.openstreetmap.org/search.php?q=${countryCode}&format=geojson&polygon_geojson=1`
+        `https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson`
       );
       if (!limitDataResponse.ok) {
         throw new Error("Error en API de límites de país");
       }
       const limitData = await limitDataResponse.json();
-      setCountryData((prevState) => ({
-        ...prevState,
-        limitData: limitData,
-      }));
+
+      const countryGeoJSON = limitData.features.find(
+        (feature) => feature.properties.name === countryCode
+      );
+
+      countryGeoJSON.properties.color = color;
+
+      /*dispatch(setCountryData({
+        type: 'covid/setCountryName',
+        payload: {
+          countryName: countryCode
+        }
+      }))*/
+      
+
+      setCountryData({
+        country: countryCode,
+        totalCases: casesTotal,
+        totalDeaths: deathsTotal,
+        geoJSON: countryGeoJSON,
+      });
       setLoading(false);
     } catch (error) {
       // Manejar el error de cada API por separado
@@ -112,7 +115,7 @@ function Search() {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen">
+    <div className="flex flex-col justify-center items-center">
       <h1 className="text-4xl font-bold mb-8">Search country</h1>
       <form onSubmit={handleSubmit} className="flex items-center">
         <input
@@ -131,10 +134,6 @@ function Search() {
       </form>
       {error && <p className="text-red-500 mt-4">{error}</p>}
       {loading && <Loading />}
-      {countryData.country && countryData.limitData && countryData.colorState && countryData.totalCases && countryData.totalDeaths && (
-        <MapViewLimits countryName={countryData.country} limitData={countryData.limitData} color={countryData.colorState} totalCases={countryData.totalCases} totalDeaths={countryData.totalDeaths}/>
-      )}
-
     </div>
   );
 }
