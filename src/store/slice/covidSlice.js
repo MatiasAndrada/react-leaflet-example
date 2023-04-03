@@ -1,8 +1,16 @@
 import { createSlice } from "@reduxjs/toolkit";
+
 const initialState = {
   countryName: "",
   covidData: {},
-  geoJson: {},
+  geoJson: [
+    {
+      type: "Feature",
+      properties: {
+        name: "",
+      },
+    },
+  ],
 };
 
 const covidSlice = createSlice({
@@ -21,4 +29,7 @@ const covidSlice = createSlice({
   },
 });
 
-export const { setCountryName, setCovidData, setGeoJson } = covidSlice.actions;
+export const { setCountryName, setCovidData, setGeoJson, setState } =
+  covidSlice.actions;
+
+export default covidSlice.reducer;

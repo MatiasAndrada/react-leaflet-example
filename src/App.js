@@ -3,6 +3,7 @@ import React from "react";
 
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 
+
 import Home from "./components/Home";
 import Search from './components/Search/Search'
 import MapView from "./components/Maps/MapView"; 

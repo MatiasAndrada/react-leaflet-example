@@ -1,8 +1,6 @@
 import React, { useState } from "react";
-//import use dispatch 
-//import { useDispatch } from "react-redux";
-
-//import { setCountryName, setCovidData } from "../../store/slice/covidSlice";
+import { useDispatch } from "react-redux";
+import { setCountryName, setCovidData } from "../../store/slice/covidSlice";
 
 import Loading from "../Loading/Loading";
 
@@ -10,19 +8,7 @@ function Search() {
   const [country, setCountry] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [countryData, setCountryData] = useState({
-    country: "",
-    totalCases: "",
-    totalDeaths: "",
-    color: "",
-  });
-  
-  //const dispatch = useDispatch();
-  //console.log(dispatch)
-
-
-  
-
+  const dispatch = useDispatch();
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -36,7 +22,7 @@ function Search() {
       }
       const countryData = await countryDataResponse.json();
       const countryCode = countryData[0].name.common;
-
+      dispatch(setCountryName(countryCode));
       //! Obtener los datos de COVID del país
       const urlCovid = `https://api.covid19api.com/total/country/${countryCode}`;
       const covidDataResponse = await fetch(urlCovid);
@@ -46,7 +32,6 @@ function Search() {
       }
 
       const covidData = await covidDataResponse.json();
-
       const casesTotal = covidData[covidData.length - 1].Confirmed;
       const deathsTotal = covidData[covidData.length - 1].Deaths;
       const generateColor = (deaths, cases) => {
@@ -62,7 +47,14 @@ function Search() {
         }
       };
       const color = generateColor(deathsTotal, casesTotal);
+      const covidObj = {
+        casesTotal: casesTotal,
+        deathsTotal: deathsTotal,
+        colorState: color,
+      };
+      dispatch(setCovidData(covidObj));
 
+      /*
       //! Obtener los límites del país
       const limitDataResponse = await fetch(
         `https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson`
@@ -75,23 +67,9 @@ function Search() {
       const countryGeoJSON = limitData.features.find(
         (feature) => feature.properties.name === countryCode
       );
-
-      countryGeoJSON.properties.color = color;
-
-      /*dispatch(setCountryData({
-        type: 'covid/setCountryName',
-        payload: {
-          countryName: countryCode
-        }
-      }))*/
       
-
-      setCountryData({
-        country: countryCode,
-        totalCases: casesTotal,
-        totalDeaths: deathsTotal,
-        geoJSON: countryGeoJSON,
-      });
+      //countryGeoJSON.properties.color = color;
+*/
       setLoading(false);
     } catch (error) {
       // Manejar el error de cada API por separado
